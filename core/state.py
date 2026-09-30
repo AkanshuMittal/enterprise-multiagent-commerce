@@ -1,9 +1,3 @@
-"""
-Enterprise Central State Register
-Defines the single source of truth for the LangGraph multi-agent execution pipeline.
-Uses TypedDict, Annotated reducers, Literal constraint flags, and Pydantic boundary models.
-"""
-
 import operator
 from typing import Annotated, Dict, List, Literal, Optional, TypedDict
 from langchain_core.messages import BaseMessage
@@ -11,10 +5,7 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
 
-# ==============================================================================
 # 1. Pydantic Boundary Models (Ingress, Tools & Webhook Schemas)
-# ==============================================================================
-
 class LocationSpec(BaseModel):
     """Spatial coordinates and human-readable locality context."""
     city: str = Field(default="Bangalore", description="Target delivery city.")
@@ -65,6 +56,7 @@ class CartItem(BaseModel):
     price_per_unit: float = Field(..., gt=0.0, description="Price per unit in INR.")
     calories: Optional[int] = Field(None, description="Estimated calories per serving.")
     protein_g: Optional[int] = Field(None, description="Estimated protein grams.")
+    ingredients: List[str] = Field(default_factory=list, description="Ingredient list or traces for deep allergen inspection.")
 
 
 class SplitLedgerSummary(BaseModel):
@@ -90,10 +82,8 @@ class TelemetryCoordinate(BaseModel):
     merchant_type: Literal["FOOD", "INSTAMART"]
 
 
-# ==============================================================================
-# 2. Custom Reducer Functions for State Merging
-# ==============================================================================
 
+# 2. Custom Reducer Functions for State Merging
 def merge_cart_items(existing: List[CartItem], incoming: List[CartItem]) -> List[CartItem]:
     """
     Reducer function that merges items from multiple worker agents without duplicates.
@@ -108,10 +98,7 @@ def merge_cart_items(existing: List[CartItem], incoming: List[CartItem]) -> List
     return list(item_map.values())
 
 
-# ==============================================================================
 # 3. Master Central State Register (TypedDict)
-# ==============================================================================
-
 class AgentState(TypedDict):
     """
     The master state ledger for the LangGraph StateGraph runtime.
